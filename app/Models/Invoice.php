@@ -21,8 +21,8 @@ class Invoice extends Model
         'payment_account',
         'contact_email',
         'notes',
-        'signature_image_path',
-        'logo_image_path',
+        'signature',
+        'logo_path',
     ];
 
     protected static function booted()
@@ -98,5 +98,17 @@ class Invoice extends Model
     public function scopeByCustomer($query, $customerId)
     {
         return $query->where('customer_id', $customerId);
+    }
+
+    /**
+     * Get logo URL attribute
+     */
+    public function getLogoUrlAttribute()
+    {
+        if (!$this->logo_path) {
+            return null;
+        }
+
+        return \Storage::disk('public')->url($this->logo_path);
     }
 }

@@ -25,6 +25,7 @@ Route::prefix('invoices')->group(function () {
     Route::put('/{invoice}', [InvoiceController::class, 'update']);
     Route::delete('/{invoice}', [InvoiceController::class, 'destroy']);
     Route::get('/{invoice}/pdf', [InvoiceController::class, 'generatePdf']);
+    Route::get('/{invoice}/logo', [InvoiceController::class, 'getLogo']);
     Route::get('/statistics/overview', [InvoiceController::class, 'statistics']);
 
     // Invoice Items Routes

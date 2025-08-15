@@ -47,8 +47,15 @@ class InvoiceController extends Controller
      */
     public function store(InvoiceRequest $request): JsonResponse
     {
-        $invoice = Invoice::create($request->except('items'));
+        $data = $request->except(['items', 'logo']);
+        if ($request->hasFile('logo')) {
+            $logo = $request->file('logo');
+            $logoName = time() . '_' . $logo->getClientOriginalName();
+            $logoPath = $logo->storeAs('logos', $logoName, 'public');
+            $data['logo_path'] = $logoPath;
+        }
 
+        $invoice = Invoice::create($data);
         foreach ($request->items as $item) {
             $invoice->items()->create([
                 'description' => $item['description'],
@@ -57,7 +64,6 @@ class InvoiceController extends Controller
         }
 
         $invoice->load('items');
-
         return response()->json([
             'success' => true,
             'data' => $invoice,
@@ -71,7 +77,6 @@ class InvoiceController extends Controller
     public function show(Invoice $invoice): JsonResponse
     {
         $invoice->load('items');
-
         return response()->json([
             'success' => true,
             'data' => $invoice,
@@ -84,8 +89,19 @@ class InvoiceController extends Controller
      */
     public function update(InvoiceRequest $request, Invoice $invoice): JsonResponse
     {
-        $invoice->update($request->except('items'));
+        $data = $request->except(['items', 'logo']);
+        if ($request->hasFile('logo')) {
+            if ($invoice->logo_path && \Storage::disk('public')->exists($invoice->logo_path)) {
+                \Storage::disk('public')->delete($invoice->logo_path);
+            }
 
+            $logo = $request->file('logo');
+            $logoName = time() . '_' . $logo->getClientOriginalName();
+            $logoPath = $logo->storeAs('logos', $logoName, 'public');
+            $data['logo_path'] = $logoPath;
+        }
+
+        $invoice->update($data);
         $invoice->items()->delete();
         foreach ($request->items as $item) {
             $invoice->items()->create([
@@ -95,7 +111,6 @@ class InvoiceController extends Controller
         }
 
         $invoice->load('items');
-
         return response()->json([
             'success' => true,
             'data' => $invoice,
@@ -108,6 +123,10 @@ class InvoiceController extends Controller
      */
     public function destroy(Invoice $invoice): JsonResponse
     {
+        if ($invoice->logo_path && \Storage::disk('public')->exists($invoice->logo_path)) {
+            \Storage::disk('public')->delete($invoice->logo_path);
+        }
+
         $invoice->items()->delete();
         $invoice->delete();
 
@@ -153,6 +172,29 @@ class InvoiceController extends Controller
                 'pdf_url' => '/invoices/' . $invoice->id . '/pdf'
             ],
             'message' => 'PDF generated successfully'
+        ]);
+    }
+
+    /**
+     * Get logo URL for invoice
+     */
+    public function getLogo(Invoice $invoice): JsonResponse
+    {
+        if (!$invoice->logo_path) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Logo not found'
+            ], 404);
+        }
+
+        $logoUrl = \Storage::disk('public')->url($invoice->logo_path);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'logo_url' => $logoUrl
+            ],
+            'message' => 'Logo retrieved successfully'
         ]);
     }
 }
