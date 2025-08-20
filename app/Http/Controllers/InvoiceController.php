@@ -7,6 +7,7 @@ use App\Models\InvoiceItem;
 use App\Http\Requests\InvoiceRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
 
 class InvoiceController extends Controller
 {
@@ -164,6 +165,14 @@ class InvoiceController extends Controller
     public function generatePdf(Invoice $invoice): JsonResponse
     {
         $invoice->load('items');
+
+        if ($invoice->logo_path) {
+            $logoPath = Storage::disk('public')->path($invoice->logo_path);
+            $mimeType = mime_content_type($logoPath);
+            $base64 = base64_encode(file_get_contents($logoPath));
+            // dd($base64);
+            $invoice->logo_base64 = "data:{$mimeType};base64,{$base64}";
+        }
 
         return response()->json([
             'success' => true,

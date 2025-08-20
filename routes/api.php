@@ -14,7 +14,7 @@ Route::get('/', function () {
     return response()->json([
         'success' => true,
         'message' => 'pong'
-    ]);
+    ]); 
 });
 
 // Invoice Routes
